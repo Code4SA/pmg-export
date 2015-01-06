@@ -113,9 +113,9 @@ class Convert extends CI_Controller {
 
 	protected function _strip_word_html($text, $allowed_tags = '<b><i><sup><sub><em><strong><u><br><p>')
     {
-    	if (strlen($text) > 100000) {
-    		return "Too big to process";
-    	}
+    	// if (strlen($text) > 100000) {
+    	// 	return "Too big to process";
+    	// }
         mb_regex_encoding('UTF-8');
         //replace MS special characters first
         $search = array('/&lsquo;/u', '/&rsquo;/u', '/&ldquo;/u', '/&rdquo;/u', '/&mdash;/u');
@@ -176,13 +176,12 @@ class Convert extends CI_Controller {
 
 	protected function _content_type($type, $limit=10, $offset=0, $write_to_db = false) {
 		$docs = array();
-		// $tidy = new tidy;
-		
-		$this->db->save_queries = false;
-		$config = array(
-           'indent'         => true,
-           'output-xhtml'   => true,
-           'wrap'           => 200);
+		$fname = FCPATH . "data/" . $type . ".json";
+		// print $fname;
+		// die();
+		if ($write_to_db) {
+			$f = fopen($fname, "a");
+		}
 		//First fetch all the nodes
 		$nodequery = $this->db->where("type", $type)->limit($limit)->offset($offset)->group_by("nid")->get("prod_node");
 		foreach($nodequery->result() as $node) {
@@ -238,14 +237,25 @@ class Convert extends CI_Controller {
 			$this->_find_files_top_level($doc);
 
 			$revision = $this->db->where("vid", $doc->vid)->get("prod_node_revisions")->row();
-			
+			if (!empty($revision->body)) {
+				$doc->body = $this->_strip_word_html($revision->body);
+			}
+			if (!empty($revision->teaser)) {
+				$doc->teaser = trim(trim(html_entity_decode(strip_tags($revision->teaser)), chr(0xC2).chr(0xA0)));
+			}
+			if (!empty($revision->title)) {
+				$doc->title = $revision->title;
+			}
+			$doc->revision_timestamp = $revision->timestamp;
 			// foreach($revisions as $revision) {
-				$revision->body = $this->_strip_word_html($revision->body);
-				$revision->teaser = strip_tags($revision->teaser);
-				$doc->revisions[] = $revision;
+				// $revision->body = $this->_strip_word_html($revision->body);
+				// $revision->teaser = strip_tags($revision->teaser);
+				// $doc->revisions[] = $revision;
 			// }
 			if ($write_to_db) {
-				$this->mongo_db->insert("pmg_".$type, $doc);
+				// $this->mongo_db->insert("pmg_".$type, $doc);
+				fwrite($f, json_encode($doc));
+				fwrite($f, "\n");
 				$docs[] = $doc->nid;
 			} else {
 				$docs[] = $doc;	
@@ -253,6 +263,7 @@ class Convert extends CI_Controller {
 
 			
 		}
+		fclose($f);
 		return $docs;
 	}
 
@@ -304,7 +315,7 @@ class Convert extends CI_Controller {
 		print "<h1>Starting Dump</h1>";
 		foreach($types as $type) {
 			print "<strong>Generating type ".$type->name."</strong><br />";
-			$this->mongo_db->delete_all("pmg_".$type->type);
+			// $this->mongo_db->delete_all("pmg_".$type->type);
 			$item_count = $this->db->where("type", $type->type)->count_all_results("prod_node");
 			$runs = ceil($item_count / $per_run);
 			print "Number of items: $item_count<br /> Number of runs: $runs<br />";
