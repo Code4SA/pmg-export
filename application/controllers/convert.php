@@ -270,8 +270,11 @@ class Convert extends CI_Controller {
 	protected function _users($limit, $offset, $write_to_db = false, $delete_db = true) {
 		$result = array();
 		
-		if ($write_to_db && $delete_db) {
-			$this->mongo_db->delete_all("pmg_users");
+		$fname = FCPATH . "data/users.json";
+		// print $fname;
+		// die();
+		if ($write_to_db) {
+			$f = fopen($fname, "a");
 		}
 		$users = $this->db->select("uid, name, pass, mail, created, access, login, status, timezone, language, init, timezone_name")->limit($limit)->offset($offset)->get("prod_users");
 
@@ -283,7 +286,8 @@ class Convert extends CI_Controller {
 			$premium->free_result();
 			// unset($user->data);
 			if ($write_to_db) {
-				$this->mongo_db->insert("pmg_users", $user);
+				fwrite($f, json_encode($user));
+				fwrite($f, "\n");
 			} else {
 				$result[] = $user;
 			}
@@ -349,7 +353,7 @@ class Convert extends CI_Controller {
 	}
 
 	public function all_users() {
-		$this->mongo_db->delete_all("pmg_users");
+		// $this->mongo_db->delete_all("pmg_users");
 		$total = 25089; //Cheating
 		$per_request = 1000;
 		for ($x = 0; $x < ceil($total / $per_request); $x++) {
