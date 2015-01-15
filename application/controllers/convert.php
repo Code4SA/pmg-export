@@ -354,7 +354,7 @@ class Convert extends CI_Controller {
 
 	public function all_users() {
 		// $this->mongo_db->delete_all("pmg_users");
-		$total = 25089; //Cheating
+		$total = $this->db->count_all("prod_users"); 
 		$per_request = 1000;
 		for ($x = 0; $x < ceil($total / $per_request); $x++) {
 			print "Offset " + ($x * $per_request)+"<br>\n";
