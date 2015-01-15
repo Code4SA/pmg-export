@@ -302,6 +302,42 @@ class Convert extends CI_Controller {
 		}
 	}
 
+	protected function _user_orgs($limit, $offset, $write_to_db = false, $delete_db = true) {
+		$result = array();
+		
+		$fname = FCPATH . "data/user_organisation.json";
+		// print $fname;
+		// die();
+		if ($write_to_db) {
+			$f = fopen($fname, "a");
+		}
+		$orgs = $this->db->select("*")->limit($limit)->offset($offset)->get("prod_user_domain");
+
+		foreach($orgs->result() as $org) {
+
+			$org->terms = $this->db->select("prod_term_data.name, prod_term_data.tid")->where("oid", $org->oid)->join("prod_term_data", "prod_term_data.tid = prod_user_domain_terms.tid")->get("prod_user_domain_terms")->result();
+			// $premium = $this->db->select("prod_term_data.name, prod_term_data.tid")->select("1 AS premium", false)->where("uid", $user->uid)->join("prod_term_data", "prod_term_data.tid = prod_users_terms_premium.tid")->get("prod_users_terms_premium");
+			// $user->subscribed = array_merge($terms->result(), $premium->result());
+			// $terms->free_result();
+			// $premium->free_result();
+			// unset($user->data);
+			if ($write_to_db) {
+				fwrite($f, json_encode($org));
+				fwrite($f, "\n");
+			} else {
+				$result[] = $org;
+			}
+			
+			// $result[]=$user;
+		}
+		$orgs->free_result();
+		if (!$write_to_db) {
+			return $result;
+		} else {
+			return "All done";
+		}
+	}
+
 	public function content_type($type, $limit=10, $offset=0) {
 		header("Content-Type: text/json");
 		print json_encode($this->_content_type($type, $limit, $offset));
@@ -359,6 +395,22 @@ class Convert extends CI_Controller {
 		for ($x = 0; $x < ceil($total / $per_request); $x++) {
 			print "Offset " + ($x * $per_request)+"<br>\n";
 			$this->_users($per_request, $x * $per_request, true, false);
+		}
+		print "All done";
+	}
+
+	public function orgs($limit=10, $offset=0, $mongo_save = false) {
+		header("Content-Type: text/json");
+		print json_encode($this->_user_orgs($limit, $offset, $mongo_save));
+	}
+
+	public function all_orgs() {
+		// $this->mongo_db->delete_all("pmg_users");
+		$total = $this->db->count_all("prod_user_domain"); 
+		$per_request = 1000;
+		for ($x = 0; $x < ceil($total / $per_request); $x++) {
+			print "Offset " + ($x * $per_request)+"<br>\n";
+			$this->_user_orgs($per_request, $x * $per_request, true, false);
 		}
 		print "All done";
 	}
