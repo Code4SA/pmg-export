@@ -281,7 +281,8 @@ class Convert extends CI_Controller {
 		foreach($users->result() as $user) {
 			$terms = $this->db->select("prod_term_data.name, prod_term_data.tid")->select("0 AS premium", false)->where("uid", $user->uid)->join("prod_term_data", "prod_term_data.tid = prod_users_terms_alerts.tid")->get("prod_users_terms_alerts");
 			$premium = $this->db->select("prod_term_data.name, prod_term_data.tid")->select("1 AS premium", false)->where("uid", $user->uid)->join("prod_term_data", "prod_term_data.tid = prod_users_terms_premium.tid")->get("prod_users_terms_premium");
-			$user->subscribed = array_merge($terms->result(), $premium->result());
+			$user->subscribed = $terms->result();
+			$user->alerts = $premium->result();
 			$terms->free_result();
 			$premium->free_result();
 			// unset($user->data);
