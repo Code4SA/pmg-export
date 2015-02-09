@@ -177,10 +177,13 @@ class Convert extends CI_Controller {
 	protected function _content_type($type, $limit=10, $offset=0, $write_to_db = false) {
 		$docs = array();
 		$fname = FCPATH . "data/" . $type . ".json";
+		$csvfname = FCPATH . "data/" . $type . ".csv";
 		// print $fname;
 		// die();
 		if ($write_to_db) {
-			$f = fopen($fname, "a");
+			$f = fopen($fname, "w");
+			$fcsv = fopen($csvfname, "w");
+			fputcsv($fcsv, array("nid", "title", "body"));
 		}
 		//First fetch all the nodes
 		$nodequery = $this->db->where("type", $type)->limit($limit)->offset($offset)->group_by("nid")->get("prod_node");
@@ -256,6 +259,9 @@ class Convert extends CI_Controller {
 				// $this->mongo_db->insert("pmg_".$type, $doc);
 				fwrite($f, json_encode($doc));
 				fwrite($f, "\n");
+				if (isset($doc->body)) {
+					fputcsv($fcsv, array($doc->nid, $doc->title, $doc->body));
+				}
 				$docs[] = $doc->nid;
 			} else {
 				$docs[] = $doc;	
@@ -265,6 +271,7 @@ class Convert extends CI_Controller {
 		}
 		if ($write_to_db) {
 			fclose($f);
+			fclose($fcsv);
 		}
 		return $docs;
 	}
