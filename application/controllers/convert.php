@@ -111,7 +111,7 @@ class Convert extends CI_Controller {
 		}
 	}
 
-	protected function _strip_word_html($text, $allowed_tags = '<b><i><sup><sub><em><strong><u><br><p>')
+	protected function _strip_word_html($text, $allowed_tags = '<b><i><sup><sub><em><strong><u><br><p><table><tr><td><th><ul><ol><li>')
     {
     	// if (strlen($text) > 100000) {
     	// 	return "Too big to process";
@@ -263,7 +263,9 @@ class Convert extends CI_Controller {
 
 			
 		}
-		fclose($f);
+		if ($write_to_db) {
+			fclose($f);
+		}
 		return $docs;
 	}
 
